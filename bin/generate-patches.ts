@@ -17,7 +17,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import matter from "gray-matter";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -94,10 +94,6 @@ function groupByRepoAndRef(
   return map;
 }
 
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, "'\\''")}'`;
-}
-
 /**
  * Normalize upstream SKILL.md the same way update-skills.ts does:
  * - Ensure metadata object exists
@@ -147,6 +143,16 @@ function listFilesRecursive(dir: string, prefix = ""): string[] {
   return files.sort();
 }
 
+function findLicenseFile(dir: string): string | null {
+  for (const licenseName of ["LICENSE", "LICENSE.txt"]) {
+    const licensePath = path.join(dir, licenseName);
+    if (fs.existsSync(licensePath)) {
+      return licensePath;
+    }
+  }
+  return null;
+}
+
 /**
  * Fetch upstream skills and generate patches by comparing with local versions.
  */
@@ -159,12 +165,12 @@ function generatePatchesFromRepo(
 
   try {
     // Init sparse checkout
-    execSync(`git init`, { cwd: tempDir, stdio: "pipe" });
-    execSync(`git remote add origin ${shellQuote(`${repoUrl}.git`)}`, {
+    execFileSync("git", ["init"], { cwd: tempDir, stdio: "pipe" });
+    execFileSync("git", ["remote", "add", "origin", `${repoUrl}.git`], {
       cwd: tempDir,
       stdio: "pipe",
     });
-    execSync(`git config core.sparseCheckout true`, {
+    execFileSync("git", ["config", "core.sparseCheckout", "true"], {
       cwd: tempDir,
       stdio: "pipe",
     });
@@ -183,11 +189,11 @@ function generatePatchesFromRepo(
     fs.writeFileSync(sparseCheckoutFile, [...pathSet].join("\n") + "\n");
 
     // Fetch and checkout
-    execSync(`git fetch --depth 1 origin ${shellQuote(ref || "HEAD")}`, {
+    execFileSync("git", ["fetch", "--depth", "1", "origin", ref || "HEAD"], {
       cwd: tempDir,
       stdio: "pipe",
     });
-    execSync(`git checkout FETCH_HEAD`, { cwd: tempDir, stdio: "pipe" });
+    execFileSync("git", ["checkout", "FETCH_HEAD"], { cwd: tempDir, stdio: "pipe" });
 
     for (const skill of skills) {
       const upstreamSourceDir = path.join(tempDir, skill.source.path);
@@ -213,6 +219,15 @@ function generatePatchesFromRepo(
         }
       }
 
+      // Mirror update-skills.ts fallback behavior: when there is no configured
+      // source license path, keep an existing local license out of local.patch.
+      if (!findLicenseFile(normalizedDir)) {
+        const localLicense = findLicenseFile(skill.dir);
+        if (localLicense) {
+          fs.copyFileSync(localLicense, path.join(normalizedDir, path.basename(localLicense)));
+        }
+      }
+
       // Normalize SKILL.md frontmatter
       const normalizedSkillMd = path.join(normalizedDir, "SKILL.md");
       if (fs.existsSync(normalizedSkillMd)) {
@@ -223,10 +238,9 @@ function generatePatchesFromRepo(
 
       // Generate unified diff between normalized upstream and local
       try {
-        const diff = execSync(
-          `diff -ruN "${normalizedDir}" "${skill.dir}"`,
-          { encoding: "utf-8" },
-        );
+        const diff = execFileSync("diff", ["-ruN", normalizedDir, skill.dir], {
+          encoding: "utf-8",
+        });
         // diff exits 0 = no differences
         const patchPath = path.join(skill.dir, "local.patch");
         if (fs.existsSync(patchPath)) {

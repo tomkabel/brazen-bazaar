@@ -16,7 +16,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import matter from "gray-matter";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -102,42 +102,31 @@ function groupByRepoAndRef(
   return map;
 }
 
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, "'\\''")}'`;
-}
-
 /**
  * Try to apply a patch file to a skill directory.
  * Returns true if patch applied successfully, false otherwise.
  */
 function applyPatch(skillDir: string, patchContent: string): boolean {
-  // Write patch to a temp file
-  const tempPatch = path.join("/tmp", `skill-patch-${Date.now()}.patch`);
   try {
-    fs.writeFileSync(tempPatch, patchContent);
-
     // Try applying the patch with --forward to skip already-applied hunks
     // Use -p2 to strip "a/skill-name/" prefix down to the bare filename
-    try {
-      execSync(`patch -p2 --forward --no-backup-if-mismatch -d "${skillDir}" < "${tempPatch}"`, {
-        stdio: "pipe",
-        encoding: "utf-8",
-      });
-      return true;
-    } catch (err: any) {
-      // patch exits 1 if some hunks failed
-      const output = (err.stdout || "") + (err.stderr || "");
-      if (output.includes("FAILED")) {
-        return false;
-      }
-      // If all hunks were already applied, that's fine
-      if (output.includes("Reversed")) {
-        return true;
-      }
+    execFileSync("patch", ["-p2", "--forward", "--no-backup-if-mismatch", "-d", skillDir], {
+      input: patchContent,
+      stdio: ["pipe", "pipe", "pipe"],
+      encoding: "utf-8",
+    });
+    return true;
+  } catch (err: any) {
+    // patch exits 1 if some hunks failed
+    const output = String(err.stdout || "") + String(err.stderr || "");
+    if (output.includes("FAILED")) {
       return false;
     }
-  } finally {
-    if (fs.existsSync(tempPatch)) fs.unlinkSync(tempPatch);
+    // If all hunks were already applied, that's fine
+    if (output.includes("Reversed")) {
+      return true;
+    }
+    return false;
   }
 }
 
@@ -151,12 +140,12 @@ function updateFromRepo(repoUrl: string, ref: string | undefined, skills: SkillI
 
   try {
     // Init sparse checkout
-    execSync(`git init`, { cwd: tempDir, stdio: "pipe" });
-    execSync(`git remote add origin ${shellQuote(`${repoUrl}.git`)}`, {
+    execFileSync("git", ["init"], { cwd: tempDir, stdio: "pipe" });
+    execFileSync("git", ["remote", "add", "origin", `${repoUrl}.git`], {
       cwd: tempDir,
       stdio: "pipe",
     });
-    execSync(`git config core.sparseCheckout true`, {
+    execFileSync("git", ["config", "core.sparseCheckout", "true"], {
       cwd: tempDir,
       stdio: "pipe",
     });
@@ -178,11 +167,11 @@ function updateFromRepo(repoUrl: string, ref: string | undefined, skills: SkillI
     fs.writeFileSync(sparseCheckoutFile, paths);
 
     // Fetch and checkout
-    execSync(`git fetch --depth 1 origin ${shellQuote(ref || "HEAD")}`, {
+    execFileSync("git", ["fetch", "--depth", "1", "origin", ref || "HEAD"], {
       cwd: tempDir,
       stdio: "pipe",
     });
-    execSync(`git checkout FETCH_HEAD`, { cwd: tempDir, stdio: "pipe" });
+    execFileSync("git", ["checkout", "FETCH_HEAD"], { cwd: tempDir, stdio: "pipe" });
 
     // Update each skill
     for (const skill of skills) {
