@@ -6,3 +6,7 @@ dist/
 # Local client/tool configuration should not define the marketplace.
 .kilo/
 .kilocode/
+.commandcode/
+
+# Local artifacts
+*.db
