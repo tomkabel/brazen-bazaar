@@ -1,4 +1,4 @@
-<!-- Part of the shell-scripting AbsolutelySkilled skill. Load this file when
+<!-- Part of the Brazen Bazaar shell-scripting skill. Load this file when
      writing bash scripts and needing quick reference for built-ins, parameter
      expansion syntax, test operators, or special variables. -->
 
@@ -119,7 +119,7 @@ has `${var@Q}` equivalent via the `(q)` expansion flag: `${(q)var}`.
 | `-w file` | File is writable |
 | `-x file` | File is executable |
 | `-s file` | File exists and is non-empty |
-| `-z file` | File is zero bytes |
+| `[[ -e file && ! -s file ]]` | File exists and is zero bytes |
 | `f1 -nt f2` | `f1` is newer than `f2` |
 | `f1 -ot f2` | `f1` is older than `f2` |
 
@@ -555,8 +555,12 @@ scratch_dir=$(mktemp -d)
 trap 'rm -rf "$scratch_dir"' EXIT
 
 # Check pipeline status across all stages
-cmd1 | cmd2 | cmd3
-if [[ ${PIPESTATUS[0]} -ne 0 ]] || [[ ${PIPESTATUS[1]} -ne 0 ]]; then
+if cmd1 | cmd2 | cmd3; then
+  status=("${PIPESTATUS[@]}")
+else
+  status=("${PIPESTATUS[@]}")
+fi
+if (( status[0] != 0 || status[1] != 0 || status[2] != 0 )); then
   echo "Pipeline failed"
 fi
 ```

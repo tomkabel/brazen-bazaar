@@ -1,4 +1,4 @@
-<!-- Part of the shell-scripting AbsolutelySkilled skill. Load this file when
+<!-- Part of the Brazen Bazaar shell-scripting skill. Load this file when
      writing zsh scripts and needing quick reference for built-ins, parameter
      expansion modifiers, globbing qualifiers, or special variables. -->
 
@@ -161,7 +161,7 @@ Zsh evaluates globs powerfully. Use `*(qualifier)` to filter files directly.
 | `*(@)` | **Symlinks** only |
 | `*(x)` | **Executable** files |
 | `*(m-1)` | Modified in the last **1 day** |
-| `*(mtime +30)` | Modified more than 30 days ago |
+| `*(m+30)` | Modified more than 30 days ago |
 | `*(Lm+1)` | Files larger than **1 Megabyte** |
 | `*(om)` | Order by modification date (**newest first**) |
 | `*(Om)` | Order by modification date (**oldest first**) |
@@ -513,9 +513,14 @@ my_function() {
 
 # Using anonymous functions instead of subshells for scoping
 () {
-  local tmpfile=$(mktemp)
-  # Work with tmpfile...
-} # tmpfile automatically cleaned up, no subshell forked!
+  local tmpfile
+  tmpfile=$(mktemp) || return
+  {
+    # Work with tmpfile...
+  } always {
+    rm -f "$tmpfile"
+  }
+} # tmpfile variable is scoped locally; the file is removed explicitly.
 
 # Function with error handling
 safe_operation() {
@@ -600,8 +605,13 @@ retry 3 2 curl -sf https://example.com
 
 # Anonymous function for isolated scoping (no subshell!)
 () {
-  local tmp_dir=$(mktemp -d)
-  # Work that doesn't affect parent environment...
+  local tmp_dir
+  tmp_dir=$(mktemp -d) || return
+  {
+    # Work that doesn't affect parent environment...
+  } always {
+    rm -rf "$tmp_dir"
+  }
 }
 ```
 
@@ -633,9 +643,13 @@ lines=( ${(f)"$(<input.txt)"} )
 ```zsh
 # Use instead of wrapping in (...) subshells which fork and are slow
 () {
-  local temp_file=$(mktemp)
-  # Do work...
-  # temp_file automatically destroyed when function exits
+  local temp_file
+  temp_file=$(mktemp) || return
+  {
+    # Do work...
+  } always {
+    rm -f "$temp_file"
+  }
   # No subshell forked! Faster than ( ... )
 }
 ```
