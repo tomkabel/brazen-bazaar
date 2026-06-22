@@ -1,17 +1,17 @@
 items:
   - id: shell-scripting
     description: >
-      Use this skill whenever someone asks to write, debug, or improve a bash or zsh script — whether it's a one-liner,
-      a CI/CD pipeline, an SSH automation across multiple servers, or a full CLI tool. This skill triggers on: writing
-      shell scripts from scratch, parsing command-line arguments (--input, --output, --verbose flags), handling errors
-      and exit codes, processing files (CSV, log files, config files), using trap for cleanup on failure, creating
-      timestamped backups, running commands in parallel across multiple hosts, and automating any CLI workflow. Also use
-      when asking about shell concepts like here documents, process substitution, subshells, signal trapping, or how to
-      safely handle whitespace/ filenames with spaces. Explicitly DO NOT trigger for Python or Node.js CLI tools — those
-      use cases belong in their own language ecosystems.
+      Use this skill whenever someone asks to write, debug, or improve a POSIX sh, bash, or zsh script — whether it's a
+      one-liner, a CI/CD pipeline, an SSH automation across multiple servers, or a full CLI tool. This skill triggers
+      on: writing shell scripts from scratch, parsing command-line arguments (--input, --output, --verbose flags),
+      handling errors and exit codes, processing files (CSV, log files, config files), using trap for cleanup on
+      failure, creating timestamped backups, running commands in parallel across multiple hosts, and automating any CLI
+      workflow. Also use when asking about shell concepts like here documents, process substitution, subshells, signal
+      trapping, or how to safely handle whitespace/ filenames with spaces. Explicitly DO NOT trigger for Python or
+      Node.js CLI tools — those use cases belong in their own language ecosystems.
     category: development
     license: MIT
-    compatibility: Requires bash or zsh on a Unix-like shell environment.
+    compatibility: Requires a POSIX-like Unix environment; examples are labeled for POSIX sh, Bash, or Zsh.
     githubUrl: https://github.com/tomkabel/brazen-bazaar/tree/main/skills/shell-scripting
     rawUrl: https://raw.githubusercontent.com/tomkabel/brazen-bazaar/main/skills/shell-scripting/SKILL.md
     content: https://github.com/tomkabel/brazen-bazaar/releases/download/skills-latest/shell-scripting.tar.gz
@@ -19,4 +19,4 @@ items:
     source:
       repository: https://github.com/tomkabel/brazen-bazaar
       path: skills/shell-scripting
-      ref: main
+      ref: 73fdf5af774dd40829f7f99b3751c752548c2e6e

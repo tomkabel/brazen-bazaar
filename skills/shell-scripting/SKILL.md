@@ -1,7 +1,7 @@
 ---
 name: shell-scripting
 description: >
-  Use this skill whenever someone asks to write, debug, or improve a bash or zsh script —
+  Use this skill whenever someone asks to write, debug, or improve a POSIX sh, bash, or zsh script —
   whether it's a one-liner, a CI/CD pipeline, an SSH automation across multiple servers,
   or a full CLI tool. This skill triggers on: writing shell scripts from scratch, parsing
   command-line arguments (--input, --output, --verbose flags), handling errors and exit
@@ -12,36 +12,37 @@ description: >
   filenames with spaces. Explicitly DO NOT trigger for Python or Node.js CLI tools —
   those use cases belong in their own language ecosystems.
 license: MIT
-compatibility: Requires bash or zsh on a Unix-like shell environment.
+compatibility: Requires a POSIX-like Unix environment; examples are labeled for POSIX sh, Bash, or Zsh.
 metadata:
   category: development
   author: tomkabel
   source:
     repository: https://github.com/tomkabel/brazen-bazaar
     path: skills/shell-scripting
-    ref: main
+    ref: 73fdf5af774dd40829f7f99b3751c752548c2e6e
 ---
 
 # Shell Scripting
 
 Shell scripting is the art of automating tasks through the Unix shell - combining
 built-in commands, control flow, and process management to build reliable CLI tools
-and automation workflows. This skill covers production-quality bash and zsh scripting:
-robust error handling, portable argument parsing, safe file operations, and the
-idioms that separate fragile one-liners from scripts that hold up in production.
+and automation workflows. This skill covers production-quality POSIX sh, Bash,
+and Zsh scripting: robust error handling, portable argument parsing, safe file
+operations, and the idioms that separate fragile one-liners from scripts that
+hold up in production.
 
 ---
 
 ## When to use this skill
 
 Trigger this skill when the user:
-- Asks to write or review a bash or zsh script
+- Asks to write or review a POSIX `sh`, Bash, or Zsh script
 - Needs to parse command-line arguments or flags
 - Wants to automate a CLI workflow or task runner
 - Asks about exit codes, signal trapping, or error handling in shell
 - Needs to process files, lines, or streams from the terminal
 - Asks about here documents, process substitution, or subshells
-- Wants a portable script that works across bash, zsh, and sh
+- Needs a script for a clearly identified shell target: POSIX `sh`, Bash, or Zsh
 
 Do NOT trigger this skill for:
 - Python or Node.js CLI tools (shell is the wrong tool for complex logic)
@@ -49,11 +50,114 @@ Do NOT trigger this skill for:
 
 ---
 
+## Choose the shell target first
+
+Do not claim one snippet is portable if it uses shell-specific features. POSIX
+`sh`, Bash, and Zsh overlap, but their strict modes, arrays, tests, traps, and
+globbing differ enough that production examples must be labeled by target.
+
+### POSIX `sh`
+
+POSIX `sh` syntax avoids arrays, `[[ ]]`, `local`, process substitution, and
+`pipefail`:
+
+```sh
+#!/bin/sh
+set -eu
+
+[ "$#" -eq 1 ] || {
+  printf 'Usage: %s <file>\n' "$0" >&2
+  exit 2
+}
+
+file=$1
+if [ -f "$file" ]; then
+  printf '%s\n' "$file exists"
+fi
+```
+
+### Bash
+
+Bash examples may use arrays, `[[ ]]`, `local`, process substitution, and
+`pipefail`:
+
+```bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+args=("$@")
+if [[ ${#args[@]} -eq 0 ]]; then
+  printf 'Usage: %s <file>...\n' "$0" >&2
+  exit 2
+fi
+```
+
+### Zsh
+
+Zsh examples should use Zsh isolation and Zsh-native options:
+
+```zsh
+#!/usr/bin/env zsh
+emulate -L zsh
+setopt err_exit pipe_fail no_unset
+
+typeset -a args
+args=("$@")
+if (( ${#args[@]} == 0 )); then
+  print -u2 "Usage: $0 <file>..."
+  exit 2
+fi
+```
+
+---
+
 ## Key principles
 
-1. **Always use `set -euo pipefail`** - Start every non-trivial script with this.
-   `-e` exits on error, `-u` treats unset variables as errors, `-o pipefail` catches
-   failures in pipelines. Without this, silent failures hide bugs for weeks.
+1. **Use strict mode for the selected shell only** - Bash, Zsh, and POSIX `sh`
+   have different option sets and failure semantics.
+
+   Bash:
+
+   ```bash
+   set -Eeuo pipefail
+   shopt -s inherit_errexit 2>/dev/null || true
+   ```
+
+   Zsh:
+
+   ```zsh
+   emulate -L zsh
+   setopt err_exit pipe_fail no_unset
+   ```
+
+   POSIX `sh` has no `pipefail`. Use `set -eu`, and when pipeline status
+   matters, split the pipeline so each stage can be checked:
+
+   ```sh
+   set -eu
+
+   tmp=$(mktemp "${TMPDIR:-/tmp}/pipeline.XXXXXX") || exit 1
+   trap 'rm -f "$tmp"' 0 HUP INT TERM
+
+   if produce_rows >"$tmp"; then
+     :
+   else
+     status=$?
+     printf 'ERROR: produce_rows failed with exit code %s\n' "$status" >&2
+     exit "$status"
+   fi
+
+   if sort_rows <"$tmp" >output.txt; then
+     :
+   else
+     status=$?
+     printf 'ERROR: sort_rows failed with exit code %s\n' "$status" >&2
+     exit "$status"
+   fi
+
+   rm -f "$tmp"
+   trap - 0 HUP INT TERM
+   ```
 
 2. **Quote everything** - Always double-quote variable expansions: `"$var"`, `"$@"`,
    `"${array[@]}"`. Unquoted variables break on whitespace and glob characters. The
@@ -64,12 +168,14 @@ Do NOT trigger this skill for:
    operation.
 
 4. **Use functions for reuse and readability** - Extract logic into named functions.
-   Shell functions support local variables (`local`), can return exit codes, and make
-   scripts testable. A `main()` function at the bottom with a guard is idiomatic.
+   Bash and Zsh functions support `local`; POSIX `sh` does not require it, so avoid
+   `local` in POSIX examples. A `main()` function at the bottom is idiomatic for
+   non-trivial Bash and Zsh scripts.
 
-5. **Prefer shell built-ins over external commands** - `[[ ]]` over `[ ]`, `${var##*/}`
-   over `basename`, `${#str}` over `wc -c`. Built-ins are faster, more portable, and
-   avoid spawning subshells. Use `printf` over `echo` for reliable output formatting.
+5. **Prefer the right built-ins for the target shell** - In Bash and Zsh, use `[[ ]]`
+   over `[ ]` when you need pattern matching or safer conditionals. In POSIX `sh`, use
+   `[ ]`. Prefer `${var##*/}` over `basename` and `${#str}` over `wc -c` when the
+   syntax is supported. Use `printf` over `echo` for reliable output formatting.
 
 ---
 
@@ -88,9 +194,11 @@ stderr so they don't pollute captured output.
 variables, `cd`, or `set` inside a subshell do not affect the parent. Command
 substitution `$(cmd)` also runs in a subshell and captures its stdout.
 
-**Variable scoping** - All variables are global by default. Use `local` inside
-functions to limit scope. `declare -r` creates read-only variables. `declare -a`
-declares arrays; `declare -A` declares associative arrays (bash 4+).
+**Variable scoping** - All variables are global by default. Bash and Zsh support
+`local` inside functions to limit scope; POSIX `sh` does not require `local`, so
+avoid it in portable scripts. In Bash, `declare -r` creates read-only variables,
+`declare -a` declares arrays, and `declare -A` declares associative arrays
+(bash 4+).
 
 **IFS (Internal Field Separator)** - Controls how bash splits words and lines.
 Default is space/tab/newline. When reading files line by line, set `IFS=` to
@@ -100,34 +208,79 @@ prevent trimming of leading/trailing whitespace: `while IFS= read -r line`.
 
 ## Common tasks
 
-### Robust script template with trap cleanup
+### Robust Bash script template with trap cleanup
 
-Every production script should start with this foundation:
+Every production Bash script should separate `EXIT` cleanup from signal handling.
+Signal handlers should clean up, restore the default handler, and re-raise the
+signal so supervisors and callers see the expected signal-derived status.
 
 ```bash
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+shopt -s inherit_errexit 2>/dev/null || true
 
 # --- constants ---
-readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly TMP_DIR="$(mktemp -d)"
+resolve_bash_script_path() {
+  local source=${BASH_SOURCE[0]}
+  local dir link
+
+  while [ -L "$source" ]; do
+    dir=$(cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd -P) || return 1
+    link=$(readlink "$source") || return 1
+    if [[ $link == /* ]]; then
+      source=$link
+    else
+      source=$dir/$link
+    fi
+  done
+
+  dir=$(cd -P "$(dirname "$source")" >/dev/null 2>&1 && pwd -P) || return 1
+  printf '%s/%s\n' "$dir" "$(basename "$source")"
+}
+
+SCRIPT_NAME=$(basename "$0")
+SCRIPT_PATH=$(resolve_bash_script_path) || exit 1
+SCRIPT_DIR=${SCRIPT_PATH%/*}
+TMP_DIR=$(mktemp -d) || exit 1
+cleanup_done=0
 
 # --- cleanup ---
-cleanup() {
-  local exit_code=$?
+cleanup_resources() {
+  if (( cleanup_done )); then
+    return 0
+  fi
+  cleanup_done=1
   rm -rf "$TMP_DIR"
-  if [[ $exit_code -ne 0 ]]; then
-    echo "ERROR: $SCRIPT_NAME failed with exit code $exit_code" >&2
+}
+
+on_exit() {
+  local exit_code=$?
+  trap - EXIT
+  cleanup_resources
+  if (( exit_code != 0 )); then
+    printf 'ERROR: %s failed with exit code %s\n' "$SCRIPT_NAME" "$exit_code" >&2
   fi
   exit "$exit_code"
 }
-trap cleanup EXIT INT TERM
+
+on_signal() {
+  local signal_name=$1
+  local signal_number=$2
+  trap - EXIT "$signal_name"
+  cleanup_resources
+  trap - "$signal_name"
+  kill -s "$signal_name" "$$" 2>/dev/null || exit $((128 + signal_number))
+  exit $((128 + signal_number))
+}
+
+trap on_exit EXIT
+trap 'on_signal INT 2' INT
+trap 'on_signal TERM 15' TERM
 
 # --- dependency check ---
 require_cmd() {
   if ! command -v "$1" &>/dev/null; then
-    echo "ERROR: required command '$1' not found" >&2
+    printf "ERROR: required command '%s' not found\n" "$1" >&2
     exit 1
   fi
 }
@@ -136,16 +289,18 @@ require_cmd jq
 
 # --- main logic ---
 main() {
-  echo "Running $SCRIPT_NAME from $SCRIPT_DIR"
+  printf 'Running %s from %s\n' "$SCRIPT_NAME" "$SCRIPT_DIR"
   # ... your logic here
 }
 
 main "$@"
 ```
 
-The `trap cleanup EXIT` fires on any exit - success, error, or signal - ensuring
-temp files are always removed. `BASH_SOURCE[0]` resolves the script's real location
-even when called via symlink.
+The `EXIT` trap handles normal success and failure. `INT` and `TERM` handlers
+clean up exactly once, then re-raise the signal so metrics preserve statuses such
+as `130` for `INT` and `143` for `TERM`. `BASH_SOURCE[0]` identifies the Bash
+source file path, but it does not resolve a symlink chain by itself; the
+`readlink` loop plus `cd -P` traces symlinks to the physical script path.
 
 ### Preventing "tar bomb" when archiving directories
 
@@ -154,10 +309,20 @@ backing up the current directory into it), use `--exclude` to prevent tar from
 attempting to archive its own output:
 
 ```bash
+restore_trap() {
+  local saved=$1 signal=$2
+  if [[ -n $saved ]]; then
+    eval "$saved"
+  else
+    trap - "$signal"
+  fi
+}
+
 create_backup() {
   local source="$1"
   local output_dir="$2"
-  local timestamp tarball base_name dir_name
+  local timestamp tarball base_name dir_name status
+  local old_err old_int old_term
 
   timestamp="$(date '+%Y%m%d_%H%M%S')"
   base_name="$(basename "$source")"
@@ -166,15 +331,45 @@ create_backup() {
   # Clean up potential trailing slashes and avoid double slashes
   tarball="${output_dir%/}/${base_name}_${timestamp}.tar.gz"
 
-  # Trap in case of interrupt/failure - remove partial archive
-  trap 'rm -f "$tarball"' ERR INT TERM
+  old_err=$(trap -p ERR || true)
+  old_int=$(trap -p INT || true)
+  old_term=$(trap -p TERM || true)
+
+  restore_backup_traps() {
+    restore_trap "$old_err" ERR
+    restore_trap "$old_int" INT
+    restore_trap "$old_term" TERM
+  }
+
+  cleanup_partial_backup() {
+    rm -f "$tarball"
+    restore_backup_traps
+  }
+
+  backup_signal() {
+    local signal_name=$1 signal_number=$2
+    cleanup_partial_backup
+    kill -s "$signal_name" "$$" 2>/dev/null || exit $((128 + signal_number))
+    exit $((128 + signal_number))
+  }
+
+  # Trap in case of interrupt/failure, while preserving the caller's traps.
+  trap 'cleanup_partial_backup' ERR
+  trap 'backup_signal INT 2' INT
+  trap 'backup_signal TERM 15' TERM
 
   # --exclude prevents "tar bomb" if output dir == source dir
   # >&2 redirects tar stdout to stderr to protect the return value
+  status=0
   tar -czf "$tarball" --exclude="$(basename "$tarball")" \
-    -C "$dir_name" "$base_name" >&2
+    -C "$dir_name" "$base_name" >&2 || status=$?
 
-  trap - ERR INT TERM  # Disable trap on success
+  if (( status != 0 )); then
+    cleanup_partial_backup
+    return "$status"
+  fi
+
+  restore_backup_traps
   printf '%s\n' "$tarball"
 }
 ```
@@ -228,9 +423,15 @@ parse_args() {
         break ;;
     esac
   done
-  # remaining positional args available as "$@"
+
   INPUT_FILE="${1-}"
   [[ -n "$INPUT_FILE" ]] || { echo "ERROR: input file required" >&2; usage 1; }
+  shift
+
+  if [[ $# -gt 0 ]]; then
+    echo "ERROR: unexpected argument(s): $*" >&2
+    usage 1
+  fi
 }
 
 parse_args "$@"
@@ -247,22 +448,110 @@ done < "$input_file"
 # Read into an array
 mapfile -t lines < "$input_file"   # bash 4+; equivalent: readarray -t lines
 
-# Write to a file atomically (avoids partial writes on failure)
-write_atomic() {
-  local target="$1"
-  local tmp
-  tmp="$(mktemp "${target}.XXXXXX")"
-  # write to tmp, then atomically rename
-  cat > "$tmp"
-  mv "$tmp" "$target"
+# Write to a file atomically. The temp file must be in the same directory as
+# the destination so the final mv is an atomic rename on one filesystem.
+stat_mode() {
+  stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"
 }
-echo "final content" | write_atomic "/etc/myapp/config"
 
-# Safe temp file with auto-cleanup (cleanup trap handles TMP_DIR removal)
-local tmpfile
-tmpfile="$(mktemp "$TMP_DIR/work.XXXXXX")"
-some_command > "$tmpfile"
-process_result "$tmpfile"
+stat_owner() {
+  stat -c '%u:%g' "$1" 2>/dev/null || stat -f '%u:%g' "$1"
+}
+
+fsync_path() {
+  local path=$1
+  if command -v fsync >/dev/null 2>&1 && fsync "$path" >/dev/null 2>&1; then
+    return 0
+  fi
+  if sync -f "$path" >/dev/null 2>&1; then
+    return 0
+  fi
+  sync
+}
+
+restore_trap() {
+  local saved=$1 signal=$2
+  if [[ -n $saved ]]; then
+    eval "$saved"
+  else
+    trap - "$signal"
+  fi
+}
+
+write_atomic() {
+  local target=$1
+  local dir base tmp mode owner tmp_owner status
+  local old_int old_term old_hup
+
+  dir=$(dirname "$target") || return 1
+  base=$(basename "$target") || return 1
+  [[ -d $dir ]] || { printf 'ERROR: target directory does not exist: %s\n' "$dir" >&2; return 1; }
+
+  tmp=$(mktemp "${dir}/.${base}.tmp.XXXXXX") || return 1
+  old_int=$(trap -p INT || true)
+  old_term=$(trap -p TERM || true)
+  old_hup=$(trap -p HUP || true)
+
+  cleanup_tmp() {
+    [[ -n ${tmp:-} && -e $tmp ]] && rm -f "$tmp"
+  }
+
+  restore_write_traps() {
+    restore_trap "$old_int" INT
+    restore_trap "$old_term" TERM
+    restore_trap "$old_hup" HUP
+  }
+
+  on_write_signal() {
+    local signal_name=$1 signal_number=$2
+    cleanup_tmp
+    restore_write_traps
+    kill -s "$signal_name" "$$" 2>/dev/null || exit $((128 + signal_number))
+    exit $((128 + signal_number))
+  }
+
+  trap 'on_write_signal INT 2' INT
+  trap 'on_write_signal TERM 15' TERM
+  trap 'on_write_signal HUP 1' HUP
+
+  status=0
+  cat >"$tmp" || status=$?
+  if (( status != 0 )); then
+    cleanup_tmp
+    restore_write_traps
+    return "$status"
+  fi
+
+  if [[ -e $target ]]; then
+    if ! chown --reference="$target" "$tmp" 2>/dev/null; then
+      owner=$(stat_owner "$target") || { cleanup_tmp; restore_write_traps; return 1; }
+      tmp_owner=$(stat_owner "$tmp") || { cleanup_tmp; restore_write_traps; return 1; }
+      if [[ $owner != "$tmp_owner" ]]; then
+        chown "$owner" "$tmp" || { cleanup_tmp; restore_write_traps; return 1; }
+      fi
+    fi
+
+    if ! chmod --reference="$target" "$tmp" 2>/dev/null; then
+      mode=$(stat_mode "$target") || { cleanup_tmp; restore_write_traps; return 1; }
+      chmod "$mode" "$tmp" || { cleanup_tmp; restore_write_traps; return 1; }
+    fi
+  fi
+
+  fsync_path "$tmp" || { cleanup_tmp; restore_write_traps; return 1; }
+  mv -f "$tmp" "$target" || { status=$?; cleanup_tmp; restore_write_traps; return "$status"; }
+  tmp=
+  fsync_path "$dir" || { restore_write_traps; return 1; }
+  restore_write_traps
+}
+printf 'final content\n' | write_atomic "/etc/myapp/config"
+
+# Safe temp file with auto-cleanup from inside a function.
+process_with_tempfile() {
+  local tmpfile
+  tmpfile="$(mktemp "$TMP_DIR/work.XXXXXX")" || return 1
+  some_command >"$tmpfile"
+  process_result "$tmpfile"
+}
 ```
 
 ### String manipulation without external tools
@@ -329,34 +618,39 @@ for pid in "${pids[@]}"; do
 done
 ```
 
-### Portable scripts across bash, zsh, and sh
+### POSIX-compatible building blocks
 
-```bash
-# Detect the running shell
+Use this style only when the script target is POSIX `sh`. Bash and Zsh features
+such as arrays, `[[ ]]`, `local`, process substitution, and `pipefail` are not
+portable to POSIX `sh`.
+
+```sh
+# Diagnostic shell detection. Prefer a clear shebang over runtime guessing.
 detect_shell() {
   if [ -n "${BASH_VERSION-}" ]; then
-    echo "bash $BASH_VERSION"
+    printf 'bash %s\n' "$BASH_VERSION"
   elif [ -n "${ZSH_VERSION-}" ]; then
-    echo "zsh $ZSH_VERSION"
+    printf 'zsh %s\n' "$ZSH_VERSION"
   else
-    echo "sh (POSIX)"
+    printf '%s\n' "sh (POSIX)"
   fi
 }
 
 # POSIX-safe array alternative (use positional parameters)
 set -- alpha beta gamma
-for item do          # equivalent to: for item in "$@"
-  echo "$item"
+for item do
+  printf '%s\n' "$item"
 done
 
 # Use $(...) not backticks - both portable, but $() is nestable
-result=$(echo "$(date) - $(whoami)")
+result=$(printf '%s - %s\n' "$(date)" "$(whoami)")
 
 # Avoid bashisms when targeting /bin/sh:
-#   [[ ]] -> [ ]          (but be careful with quoting)
-#   local -> still works in most sh implementations (not POSIX but widely supported)
-#   readonly var=val      (POSIX-safe)
-#   printf not echo -e    (echo -e is not portable)
+#   [[ condition ]]       -> [ condition ]
+#   arrays                -> positional parameters or delimited strings
+#   local name=value      -> plain assignments, or use Bash/Zsh instead
+#   set -o pipefail       -> check each stage manually
+#   echo -e               -> printf
 
 printf '%s\n' "Safe output with no echo flag issues"
 ```
@@ -417,7 +711,7 @@ spin() {
 
 3. **`mktemp` without `-d` creates a file, not a directory** - `TMP=$(mktemp)` creates a temp file. If you then try `mkdir "$TMP/subdir"` it fails. Use `mktemp -d` when you need a temp directory.
 
-4. **Trap fires on subshell exits too** - A `trap cleanup EXIT` in a parent script also fires when any subshell `( ... )` in that script exits. If your cleanup function deletes temp directories, a subshell exit mid-script can remove files the parent still needs. Use `trap` selectively or test `$BASH_SUBSHELL` inside the trap function.
+4. **Do not use the same handler for `EXIT` and signals** - A shared `trap cleanup EXIT INT TERM` can run cleanup twice and can turn a signal into a misleading status. Keep `EXIT` cleanup separate from signal handlers, and have signal handlers re-raise the signal or exit with `128 + signal_number`.
 
 5. **Word splitting on array expansion without `[@]`** - `"${arr[*]}"` expands the array as a single word joined by `IFS`; `"${arr[@]}"` expands each element as a separate word. Using `*` instead of `@` when passing arrays to functions causes multi-word elements to silently merge.
 
@@ -429,7 +723,7 @@ spin() {
 
 | Anti-pattern | Why it's wrong | What to do instead |
 |---|---|---|
-| Missing `set -euo pipefail` | Errors in pipelines and unset variables are silently ignored, causing downstream data corruption | Add `set -euo pipefail` as the second line of every script |
+| Missing target-appropriate error handling | Errors in pipelines and unset variables can be silently ignored, causing downstream data corruption | Use Bash `set -Eeuo pipefail`, Zsh `setopt err_exit pipe_fail no_unset`, or POSIX `sh` `set -eu` with manual pipeline checks |
 | Unquoted variable: `rm -rf $dir` | If `$dir` is empty or contains spaces, the command destroys unintended paths | Always quote: `rm -rf "$dir"` |
 | Parsing `ls` output | `ls` output is designed for humans; filenames with spaces or newlines break word splitting | Use `find ... -print0 \| xargs -0` or a `for f in ./*` glob |
 | Using `cat file \| grep` (useless cat) | Spawns an extra process for no reason | Use input redirection: `grep pattern file` |
