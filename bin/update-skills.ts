@@ -26,6 +26,7 @@ interface SourceInfo {
   repository: string;
   path: string;
   license_path?: string;
+  ref?: string;
 }
 
 interface SkillInfo {
@@ -71,7 +72,12 @@ function collectSkills(filter?: string[]): SkillInfo[] {
     skills.push({
       name: dir.name,
       dir: path.join(skillsDir, dir.name),
-      source: { repository: source.repository, path: source.path, license_path: source.license_path },
+      source: {
+        repository: source.repository,
+        path: source.path,
+        license_path: source.license_path,
+        ref: source.ref,
+      },
       frontmatter,
     });
   }
@@ -82,16 +88,22 @@ function collectSkills(filter?: string[]): SkillInfo[] {
 /**
  * Group skills by repository so we can batch fetches.
  */
-function groupByRepo(
+function groupByRepoAndRef(
   skills: SkillInfo[],
-): Map<string, SkillInfo[]> {
-  const map = new Map<string, SkillInfo[]>();
+): Map<string, { repository: string; ref?: string; skills: SkillInfo[] }> {
+  const map = new Map<string, { repository: string; ref?: string; skills: SkillInfo[] }>();
   for (const skill of skills) {
-    const repo = skill.source.repository;
-    if (!map.has(repo)) map.set(repo, []);
-    map.get(repo)!.push(skill);
+    const repository = skill.source.repository;
+    const ref = skill.source.ref;
+    const key = `${repository}\0${ref || "HEAD"}`;
+    if (!map.has(key)) map.set(key, { repository, ref, skills: [] });
+    map.get(key)!.skills.push(skill);
   }
   return map;
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 /**
@@ -134,7 +146,7 @@ function applyPatch(skillDir: string, patchContent: string): boolean {
  * then copy each skill directory over the local one and re-apply
  * the source metadata.
  */
-function updateFromRepo(repoUrl: string, skills: SkillInfo[]): void {
+function updateFromRepo(repoUrl: string, ref: string | undefined, skills: SkillInfo[]): void {
   const tempDir = fs.mkdtempSync(path.join("/tmp", "skill-update-"));
 
   try {
@@ -166,7 +178,7 @@ function updateFromRepo(repoUrl: string, skills: SkillInfo[]): void {
     fs.writeFileSync(sparseCheckoutFile, paths);
 
     // Fetch and checkout
-    execSync(`git fetch --depth 1 origin HEAD`, {
+    execSync(`git fetch --depth 1 origin ${shellQuote(ref || "HEAD")}`, {
       cwd: tempDir,
       stdio: "pipe",
     });
@@ -249,6 +261,7 @@ function updateFromRepo(repoUrl: string, skills: SkillInfo[]): void {
         repository: skill.source.repository,
         path: skill.source.path,
         ...(skill.source.license_path && { license_path: skill.source.license_path }),
+        ...(skill.source.ref && { ref: skill.source.ref }),
       };
 
       const updatedContent = matter.stringify(body, newFrontmatter);
@@ -319,13 +332,13 @@ async function main() {
     return;
   }
 
-  const grouped = groupByRepo(skills);
+  const grouped = groupByRepoAndRef(skills);
 
-  for (const [repoUrl, repoSkills] of grouped) {
+  for (const { repository, ref, skills: repoSkills } of grouped.values()) {
     console.log(
-      `${repoUrl} (${repoSkills.length} skill${repoSkills.length > 1 ? "s" : ""})`,
+      `${repository}${ref ? `#${ref}` : ""} (${repoSkills.length} skill${repoSkills.length > 1 ? "s" : ""})`,
     );
-    updateFromRepo(repoUrl, repoSkills);
+    updateFromRepo(repository, ref, repoSkills);
     console.log();
   }
 

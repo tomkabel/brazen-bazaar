@@ -137,6 +137,7 @@ metadata:
 |-------|----------|-------------|
 | `metadata.source.repository` | **Yes** (for contributed skills) | URL to the GitHub repository containing your skill |
 | `metadata.source.path` | **Yes** (for contributed skills) | Path within the repository to the skill directory |
+| `metadata.source.ref` | No | Git ref to fetch when the skill is not on the source repository's default branch |
 | `metadata.source.license_path` | **Yes** (for contributed skills) | Path to the LICENSE file in the source repo |
 
 ### Real-World Examples

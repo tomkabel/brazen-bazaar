@@ -59,6 +59,7 @@ metadata:
 | `metadata.source`            | No       | Source information for external skills                                |
 | `metadata.source.repository` | No       | URL to the source repository                                          |
 | `metadata.source.path`       | No       | Path within the repository                                            |
+| `metadata.source.ref`        | No       | Git ref to fetch when the skill is not on the source repository's default branch |
 | `metadata.source.license_path` | Yes*  | Path to LICENSE in source repo (alternative to `license`)             |
 
 ### Markdown Body (Required)
