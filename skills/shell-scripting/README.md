@@ -6,10 +6,11 @@ shell-scripting is a production-ready Agent Skills package for writing bash or z
 
 | Field | Value |
 |-------|-------|
-| Category | devtools |
+| Category | development |
 | Version | 0.1.0 |
 | Compatibility | Requires bash or zsh on a Unix-like shell environment |
 | License | MIT |
+| Source | https://github.com/tomkabel/brazen-bazaar/tree/main/skills/shell-scripting |
 
 ## How to Install
 
@@ -17,7 +18,7 @@ shell-scripting is a production-ready Agent Skills package for writing bash or z
 2. Run the following command in your terminal:
 
 ```bash
-npx skills add AbsolutelySkilled/AbsolutelySkilled --skill shell-scripting
+npx skills add tomkabel/brazen-bazaar --skill shell-scripting
 ```
 
 3. The shell-scripting skill is now available in any Agent Skills-compatible client using that installer.
@@ -41,15 +42,6 @@ idioms that separate fragile one-liners from scripts that hold up in production.
 - Agent Skills-compatible clients
 - Bash or zsh on a Unix-like shell environment
 
-## Related Skills
-
-Pair shell-scripting with these complementary skills:
-
-- [linux-admin](https://www.absolutelyskilled.pro/skill/linux-admin)
-- [regex-mastery](https://www.absolutelyskilled.pro/skill/regex-mastery)
-- [cli-design](https://www.absolutelyskilled.pro/skill/cli-design)
-- [vim-neovim](https://www.absolutelyskilled.pro/skill/vim-neovim)
-
 ## Frequently Asked Questions
 
 ### What is shell-scripting?
@@ -59,7 +51,7 @@ Use this skill when writing bash or zsh scripts, parsing arguments, handling err
 
 ### How do I install shell-scripting?
 
-Run `npx skills add AbsolutelySkilled/AbsolutelySkilled --skill shell-scripting` in your terminal. The skill will be immediately available in your AI coding agent.
+Run `npx skills add tomkabel/brazen-bazaar --skill shell-scripting` in your terminal. The skill will be immediately available in your AI coding agent.
 
 ### What AI agents support shell-scripting?
 
@@ -67,8 +59,8 @@ This skill is portable across clients that implement the Agent Skills format.
 
 ## Maintainers
 
-- [@maddhruv](https://github.com/maddhruv)
+- tomkabel
 
 ---
 
-*Generated from [AbsolutelySkilled](https://www.absolutelyskilled.pro/skill/shell-scripting)*
+*Maintained in [Brazen Bazaar](https://github.com/tomkabel/brazen-bazaar/tree/main/skills/shell-scripting)*

@@ -17,7 +17,6 @@ items:
     content: https://github.com/tomkabel/brazen-bazaar/releases/download/skills-latest/shell-scripting.tar.gz
     checksum: https://github.com/tomkabel/brazen-bazaar/releases/download/skills-latest/shell-scripting.tar.gz.sha256
     source:
-      repository: https://github.com/maddhruv/absolute
+      repository: https://github.com/tomkabel/brazen-bazaar
       path: skills/shell-scripting
-      license_path: LICENSE
-      ref: 3fa1193422d9edd143ae336a484f1e58a4c1f8a3
+      ref: main
