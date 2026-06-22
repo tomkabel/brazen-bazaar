@@ -36,6 +36,7 @@ jobs:
 
       - name: Validate all skills
         run: |
+          shopt -s nullglob
           failed=0
           for skill_dir in skills/*/; do
             # Skip hidden directories

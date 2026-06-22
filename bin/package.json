@@ -1,5 +1,11 @@
 {
   "type": "module",
+  "scripts": {
+    "generate": "tsx generate-skill-marketplace.ts && tsx generate-modes-marketplace.ts && tsx generate-mcps-marketplace.ts",
+    "generate:skills": "tsx generate-skill-marketplace.ts",
+    "generate:modes": "tsx generate-modes-marketplace.ts",
+    "generate:mcps": "tsx generate-mcps-marketplace.ts"
+  },
   "dependencies": {
     "gray-matter": "^4.0.3",
     "tsx": "^4.19.2",

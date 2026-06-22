@@ -152,7 +152,7 @@ function updateFromRepo(repoUrl: string, ref: string | undefined, skills: SkillI
   try {
     // Init sparse checkout
     execSync(`git init`, { cwd: tempDir, stdio: "pipe" });
-    execSync(`git remote add origin ${repoUrl}.git`, {
+    execSync(`git remote add origin ${shellQuote(`${repoUrl}.git`)}`, {
       cwd: tempDir,
       stdio: "pipe",
     });

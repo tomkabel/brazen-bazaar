@@ -26,35 +26,72 @@ const skillsDir = path.join(__dirname, "..", "skills");
 function parseGitHubUrl(url: string): {
   owner: string;
   repo: string;
+  ref: string;
   skillPath: string;
 } {
-  // Handle GitHub URL with path: https://github.com/owner/repo/tree/branch/path/to/skill
-  const treePattern =
-    /github\.com\/([^\/]+)\/([^\/]+)\/tree\/[^\/]+\/(.+?)(?:\/)?$/;
-  const treeMatch = url.match(treePattern);
-  if (treeMatch) {
-    return { owner: treeMatch[1], repo: treeMatch[2], skillPath: treeMatch[3] };
+  const parsed = new URL(url);
+  if (parsed.hostname !== "github.com") {
+    throw new Error(`Invalid GitHub URL: ${url}`);
   }
 
-  // Handle GitHub URL with blob (file): https://github.com/owner/repo/blob/branch/path/to/file
-  const blobPattern =
-    /github\.com\/([^\/]+)\/([^\/]+)\/blob\/[^\/]+\/(.+?)(?:\/)?$/;
-  const blobMatch = url.match(blobPattern);
-  if (blobMatch) {
-    // Get the directory containing the file
-    const filePath = blobMatch[3];
-    const dirPath = path.dirname(filePath);
-    return { owner: blobMatch[1], repo: blobMatch[2], skillPath: dirPath };
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  const [owner, repo, marker, ...rest] = segments;
+  if (!owner || !repo || !["tree", "blob"].includes(marker) || rest.length < 2) {
+    throw new Error(
+      `Invalid GitHub URL: ${url}\n\nExpected format: https://github.com/owner/repo/tree/<ref>/path/to/skill`,
+    );
   }
 
-  throw new Error(
-    `Invalid GitHub URL: ${url}\n\nExpected format: https://github.com/owner/repo/tree/branch/path/to/skill`,
-  );
+  const { ref, sourcePath } = resolveRefAndPath(owner, repo, rest);
+  return {
+    owner,
+    repo: repo.replace(/\.git$/, ""),
+    ref,
+    skillPath: marker === "blob" ? path.posix.dirname(sourcePath) : sourcePath,
+  };
 }
 
 function getSkillName(skillPath: string): string {
   // Get the last component of the path as the skill name
   return path.basename(skillPath);
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+function resolveRefAndPath(
+  owner: string,
+  repo: string,
+  parts: string[],
+): { ref: string; sourcePath: string } {
+  const repoUrl = `https://github.com/${owner}/${repo.replace(/\.git$/, "")}.git`;
+  const refsOutput = execSync(`git ls-remote --heads --tags ${shellQuote(repoUrl)}`, {
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const refs = new Set(
+    refsOutput
+      .split("\n")
+      .map((line) => line.trim().split(/\s+/)[1])
+      .filter(Boolean)
+      .flatMap((refName) => [
+        refName.replace(/^refs\/heads\//, ""),
+        refName.replace(/^refs\/tags\//, ""),
+      ]),
+  );
+
+  for (let i = parts.length - 1; i >= 1; i--) {
+    const candidateRef = parts.slice(0, i).join("/");
+    const sourcePath = parts.slice(i).join("/");
+    if (refs.has(candidateRef) || /^[a-f0-9]{40}$/i.test(candidateRef)) {
+      return { ref: candidateRef, sourcePath };
+    }
+  }
+
+  throw new Error(
+    `Could not resolve a branch, tag, or commit from GitHub URL path: ${parts.join("/")}`,
+  );
 }
 
 async function main() {
@@ -75,11 +112,11 @@ async function main() {
 
   const [fullUrl] = args;
 
-  const { owner, repo, skillPath } = parseGitHubUrl(fullUrl);
+  const { owner, repo, ref, skillPath } = parseGitHubUrl(fullUrl);
   const skillName = getSkillName(skillPath);
   const targetDir = path.join(skillsDir, skillName);
 
-  console.log(`Adding skill from ${owner}/${repo}:${skillPath}`);
+  console.log(`Adding skill from ${owner}/${repo}#${ref}:${skillPath}`);
   console.log(`Target directory: ${targetDir}`);
 
   // Check if target already exists
@@ -97,7 +134,7 @@ async function main() {
 
     // Initialize a sparse checkout
     execSync(`git init`, { cwd: tempDir, stdio: "pipe" });
-    execSync(`git remote add origin https://github.com/${owner}/${repo}.git`, {
+    execSync(`git remote add origin ${shellQuote(`https://github.com/${owner}/${repo}.git`)}`, {
       cwd: tempDir,
       stdio: "pipe",
     });
@@ -113,8 +150,16 @@ async function main() {
     );
 
     // Fetch and checkout
-    execSync(`git fetch --depth 1 origin HEAD`, { cwd: tempDir, stdio: "pipe" });
+    execSync(`git fetch --depth 1 origin ${shellQuote(ref)}`, {
+      cwd: tempDir,
+      stdio: "pipe",
+    });
     execSync(`git checkout FETCH_HEAD`, { cwd: tempDir, stdio: "pipe" });
+    const resolvedRef = execSync(`git rev-parse HEAD`, {
+      cwd: tempDir,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
 
     const sourceDir = path.join(tempDir, skillPath);
 
@@ -151,9 +196,11 @@ async function main() {
     frontmatter.metadata.source = {
       repository: `https://github.com/${owner}/${repo}`,
       path: skillPath,
+      ref: resolvedRef,
     };
     console.log(`  Added source: https://github.com/${owner}/${repo}`);
     console.log(`  Added path: ${skillPath}`);
+    console.log(`  Pinned ref: ${resolvedRef}`);
 
     // Write back the updated SKILL.md
     const updatedContent = matter.stringify(body, frontmatter);

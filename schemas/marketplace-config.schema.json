@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brazen-bazaar.local/schemas/marketplace-config.schema.json",
+  "title": "Marketplace Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "repository"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "default": "main"
+    },
+    "skillsReleaseTag": {
+      "type": "string",
+      "minLength": 1,
+      "default": "skills-latest"
+    },
+    "githubBaseUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "rawBaseUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "skillsContentBaseUrl": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

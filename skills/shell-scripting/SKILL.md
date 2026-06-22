@@ -12,6 +12,7 @@ description: >
   filenames with spaces. Explicitly DO NOT trigger for Python or Node.js CLI tools —
   those use cases belong in their own language ecosystems.
 license: MIT
+compatibility: Requires bash or zsh on a Unix-like shell environment.
 metadata:
   category: development
   author: maddhruv
@@ -19,7 +20,7 @@ metadata:
     repository: https://github.com/maddhruv/absolute
     path: skills/shell-scripting
     license_path: LICENSE
-    ref: feat/skl-registry
+    ref: 3fa1193422d9edd143ae336a484f1e58a4c1f8a3
 ---
 
 When this skill is activated, always start your first response with the 🧢 emoji.

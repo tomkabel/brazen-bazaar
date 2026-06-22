@@ -1,0 +1,7 @@
+{
+  "$schema": "./schemas/marketplace-config.schema.json",
+  "name": "Brazen Bazaar",
+  "repository": "tomkabel/brazen-bazaar",
+  "branch": "main",
+  "skillsReleaseTag": "skills-latest"
+}

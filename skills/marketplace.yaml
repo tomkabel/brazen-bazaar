@@ -10,6 +10,14 @@ items:
       safely handle whitespace/ filenames with spaces. Explicitly DO NOT trigger for Python or Node.js CLI tools — those
       use cases belong in their own language ecosystems.
     category: development
-    githubUrl: https://github.com/Kilo-Org/kilo-marketplace/tree/main/skills/shell-scripting
-    rawUrl: https://raw.githubusercontent.com/Kilo-Org/kilo-marketplace/main/skills/shell-scripting/SKILL.md
-    content: https://github.com/Kilo-Org/kilo-marketplace/releases/download/skills-latest/shell-scripting.tar.gz
+    license: MIT
+    compatibility: Requires bash or zsh on a Unix-like shell environment.
+    githubUrl: https://github.com/tomkabel/brazen-bazaar/tree/main/skills/shell-scripting
+    rawUrl: https://raw.githubusercontent.com/tomkabel/brazen-bazaar/main/skills/shell-scripting/SKILL.md
+    content: https://github.com/tomkabel/brazen-bazaar/releases/download/skills-latest/shell-scripting.tar.gz
+    checksum: https://github.com/tomkabel/brazen-bazaar/releases/download/skills-latest/shell-scripting.tar.gz.sha256
+    source:
+      repository: https://github.com/maddhruv/absolute
+      path: skills/shell-scripting
+      license_path: LICENSE
+      ref: 3fa1193422d9edd143ae336a484f1e58a4c1f8a3

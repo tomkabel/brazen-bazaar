@@ -1,167 +1,107 @@
-<h1 align="center">Kilo Marketplace</h1>
+<h1 align="center">Brazen Bazaar</h1>
 
-A curated collection of **Skills**, **MCP Servers**, and **Modes** for enhancing AI agent capabilities across the Kilo ecosystem—including Kilo Code (VS Code extension), Kilo CLI, and compatible AI agents.
+Brazen Bazaar is a vendor-neutral registry for reusable agent capabilities.
+It indexes open Agent Skills and leaves room for client-specific adapters
+without making any one AI tool the canonical target.
 
----
+## What This Repository Publishes
 
-## What is the Kilo Marketplace?
+| Area | Purpose | Source of truth |
+| --- | --- | --- |
+| Skills | Portable task packages that follow the Agent Skills format | `skills/<id>/SKILL.md` |
+| MCP entries | Curated or augmented MCP server metadata | `mcps/<id>/MCP.yaml` |
+| Modes | Client-specific mode/profile definitions | `modes/<id>/MODE.yaml` |
+| Adapters | Installation/export guidance for specific clients | `adapters/` |
 
-The Kilo Marketplace is a community-driven repository of agent tooling prompts and configurations. It provides three types of resources that extend what AI agents can do:
+Generated files such as `skills/marketplace.yaml`, `mcps/marketplace.yaml`, and
+`modes/marketplace.yaml` are derived artifacts. Do not edit them by hand.
 
-| Resource | Description |
-|----------|-------------|
-| **[Skills](#skills)** | Modular workflows and domain expertise that teach agents how to perform specific tasks |
-| **[MCP Servers](#mcp-servers)** | Standardized integrations that connect agents to external tools and services |
-| **[Modes](#modes)** | Custom agent personalities and behaviors with tailored tool access |
+## Design Principles
 
----
-
-## Contents
-
-- [Skills](#skills)
-  - [What Are Skills?](#what-are-skills)
-  - [Skill Structure](#skill-structure)
-  - [Creating Skills](#creating-skills)
-- [MCP Servers](#mcp-servers)
-  - [What Are MCP Servers?](#what-are-mcp-servers)
-- [Modes](#modes)
-  - [What Are Modes?](#what-are-modes)
-- [Contributing](#contributing)
-- [License](#license)
-
----
+- **No vendor lock-in:** Canonical marketplace data must not require Kilo,
+  Claude, Codex, Gemini, Cursor, or any other specific client.
+- **Open formats first:** Skills follow the Agent Skills directory format:
+  a folder with `SKILL.md` plus optional `scripts/`, `references/`, `assets/`,
+  and examples.
+- **Provenance is required:** Imported skills should record
+  `metadata.source.repository`, `metadata.source.path`, and an immutable
+  `metadata.source.ref` commit SHA whenever possible.
+- **Adapters are downstream:** Client-specific install commands, permissions,
+  modes, or runtime assumptions belong in adapters or compatibility notes, not
+  in the canonical skill record.
+- **Generated catalogs reflect local source:** If a source directory is removed,
+  the next generation run should remove it from the catalog.
 
 ## Skills
 
-### What Are Skills?
-
-Skills are self-contained packages that extend an agent's capabilities with specialized knowledge and repeatable workflows. At their core, a skill is a folder containing a `SKILL.md` file with metadata and instructions that tell an agent how to perform a specific task.
-
-Skills follow the open [Agent Skills specification](https://agentskills.io/), making them interoperable across any compatible AI agent—not just Kilo.
-
-**Key benefits:**
-- **Self-documenting**: Easy to read, audit, and improve
-- **Interoperable**: Works across any agent implementing the Agent Skills spec
-- **Extensible**: Can include scripts, templates, and reference materials
-- **Shareable**: Portable between projects and developers
-
-### Skill Structure
-
-Each skill is a folder containing a `SKILL.md` file with YAML frontmatter:
-
-```
-skill-name/
-├── SKILL.md          # Required: Skill instructions and metadata
-├── scripts/          # Optional: Helper scripts
-├── references/       # Optional: Documentation
-├── assets/           # Optional: Templates, resources
-└── examples/         # Optional: Example files
-```
-
-### Creating Skills
-
-**Basic Skill Template:**
+A skill is a directory containing a `SKILL.md` file with YAML frontmatter and
+Markdown instructions. Minimal example:
 
 ```markdown
 ---
-name: my-skill-name
-description: A clear description of what this skill does and when to use it.
+name: shell-scripting
+description: Write and review robust shell scripts. Use when working with bash or zsh automation.
+license: MIT
+metadata:
+  category: development
+  source:
+    repository: https://github.com/example/skills
+    path: skills/shell-scripting
+    ref: 0123456789abcdef0123456789abcdef01234567
 ---
 
-# My Skill Name
+# Shell Scripting
 
-Detailed description of the skill's purpose and capabilities.
-
-## When to Use This Skill
-
-- Use case 1
-- Use case 2
-- Use case 3
-
-## Instructions
-
-[Detailed instructions for the agent on how to execute this skill]
-
-## Examples
-
-[Real-world examples showing the skill in action]
+Instructions for the agent go here.
 ```
 
-**Best Practices:**
-- Focus on specific, repeatable tasks
-- Include clear examples and edge cases
-- Write instructions for the agent, not end users
-- Document prerequisites and dependencies
-- Include error handling guidance
+## Generated Catalogs
 
----
+Install generator dependencies:
 
-## MCP Servers
+```bash
+cd bin
+pnpm install
+```
 
-### What Are MCP Servers?
+Regenerate all catalogs:
 
-MCP (Model Context Protocol) is a standardized communication protocol that allows AI agents to interact with external tools and services. Think of it as a universal adapter—any compatible agent can connect to any MCP server to access its functionality.
+```bash
+cd bin
+pnpm exec tsx generate-skill-marketplace.ts
+pnpm exec tsx generate-modes-marketplace.ts
+pnpm exec tsx generate-mcps-marketplace.ts
+```
 
-MCP servers provide capabilities like:
-- File system access
-- Database queries
-- API integrations
-- External service connections
+Skill catalog URLs are configured by `marketplace.config.json` and can be
+overridden in CI with:
 
-**How it works:**
-1. The AI agent (client) connects to MCP servers
-2. Each server provides specific capabilities
-3. The agent uses these capabilities through a standardized interface
-4. Communication occurs via JSON-RPC 2.0 messages
+- `MARKETPLACE_REPOSITORY`
+- `MARKETPLACE_BRANCH`
+- `MARKETPLACE_SKILLS_RELEASE_TAG`
+- `MARKETPLACE_GITHUB_BASE_URL`
+- `MARKETPLACE_RAW_BASE_URL`
+- `MARKETPLACE_SKILLS_CONTENT_BASE_URL`
 
-MCP servers can run locally on your machine or remotely as cloud services, depending on security requirements.
+## Adding Remote Skills
 
-Browse available MCP servers in the [`mcps/`](./mcps/) directory.
+Use the importer for GitHub-hosted skills:
 
----
+```bash
+cd bin
+pnpm exec tsx add-remote-skill.ts https://github.com/owner/repo/tree/main/path/to/skill
+```
 
-## Modes
+The importer copies the skill, adds source metadata, and pins the fetched commit
+SHA in `metadata.source.ref`.
 
-### What Are Modes?
+## MCP Entries
 
-Modes are custom agent configurations that define specialized behaviors, personalities, and tool access. They allow you to create purpose-built agents for specific tasks like documentation writing, code review, or security analysis.
-
-A mode defines:
-- **Role Definition**: The agent's identity and expertise
-- **Available Tools**: Which tool groups the agent can access
-- **File Restrictions**: Which files the agent can read or edit
-- **Custom Instructions**: Behavioral guidelines and rules
-
-**Example use cases:**
-- A "Documentation Writer" mode that can only edit Markdown files
-- A "Security Reviewer" mode with read-only access for auditing
-- A "Test Engineer" mode focused on test files
-
-Modes can be shared as YAML configurations and imported into Kilo Code or other compatible tools.
-
-Browse available modes in the [`modes/`](./modes/) directory.
-
----
-
-## Contributing
-
-We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on:
-
-- How to submit new skills, MCP servers, or modes
-- Quality standards
-- Pull request process
-- Code of conduct
-
-### Quick Contribution Steps
-
-1. Ensure your contribution is based on a real use case
-2. Check for duplicates in existing resources
-3. Follow the appropriate structure template
-4. Test your contribution across platforms
-5. Submit a pull request with clear documentation
-
----
+Brazen Bazaar should not compete with the official MCP Registry as the source of
+truth for public MCP server discovery. MCP entries here should either be local
+curation, compatibility notes, or marketplace-specific overlays that can be
+traced back to upstream server metadata.
 
 ## License
 
-This repository is licensed under the Apache License 2.0.
+This repository is licensed under Apache-2.0. See `NOTICE` for attribution.

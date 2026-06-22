@@ -1,7 +1,60 @@
+diff -ruN a/shell-scripting/README.md b/shell-scripting/README.md
+--- a/shell-scripting/README.md	2026-06-22 07:05:30.763157689 +0300
++++ b/shell-scripting/README.md	2026-06-22 07:05:21.617267208 +0300
+@@ -1,6 +1,6 @@
+ # shell-scripting
+ 
+-shell-scripting is a production-ready AI agent skill for claude-code, gemini-cli, openai-codex. Writing bash or zsh scripts, parsing arguments, handling errors, or automating CLI workflows.
++shell-scripting is a production-ready Agent Skills package for writing bash or zsh scripts, parsing arguments, handling errors, and automating CLI workflows.
+ 
+ ## Quick Facts
+ 
+@@ -8,7 +8,7 @@
+ |-------|-------|
+ | Category | devtools |
+ | Version | 0.1.0 |
+-| Platforms | claude-code, gemini-cli, openai-codex |
++| Compatibility | Requires bash or zsh on a Unix-like shell environment |
+ | License | MIT |
+ 
+ ## How to Install
+@@ -20,7 +20,7 @@
+ npx skills add AbsolutelySkilled/AbsolutelySkilled --skill shell-scripting
+ ```
+ 
+-3. The shell-scripting skill is now available in your AI coding agent (Claude Code, Gemini CLI, OpenAI Codex, etc.).
++3. The shell-scripting skill is now available in any Agent Skills-compatible client using that installer.
+ 
+ ## Overview
+ 
+@@ -36,11 +36,10 @@
+ 
+ `bash` `zsh` `shell` `scripting` `cli` `automation`
+ 
+-## Platforms
++## Compatibility
+ 
+-- claude-code
+-- gemini-cli
+-- openai-codex
++- Agent Skills-compatible clients
++- Bash or zsh on a Unix-like shell environment
+ 
+ ## Related Skills
+ 
+@@ -64,7 +63,7 @@
+ 
+ ### What AI agents support shell-scripting?
+ 
+-This skill works with claude-code, gemini-cli, openai-codex. Install it once and use it across any supported AI coding agent.
++This skill is portable across clients that implement the Agent Skills format.
+ 
+ ## Maintainers
+ 
 diff -ruN a/shell-scripting/SKILL.md b/shell-scripting/SKILL.md
---- a/shell-scripting/SKILL.md	2026-06-22 06:54:29.092047769 +0300
-+++ b/shell-scripting/SKILL.md	2026-06-22 06:54:24.390103469 +0300
-@@ -1,36 +1,22 @@
+--- a/shell-scripting/SKILL.md	2026-06-22 07:05:30.765157665 +0300
++++ b/shell-scripting/SKILL.md	2026-06-22 07:05:21.616515252 +0300
+@@ -1,36 +1,23 @@
  ---
  name: shell-scripting
 -version: 0.1.0
@@ -41,6 +94,7 @@ diff -ruN a/shell-scripting/SKILL.md b/shell-scripting/SKILL.md
  license: MIT
 -maintainers:
 -  - github: maddhruv
++compatibility: Requires bash or zsh on a Unix-like shell environment.
  metadata:
    category: development
 +  author: maddhruv
@@ -49,8 +103,8 @@ diff -ruN a/shell-scripting/SKILL.md b/shell-scripting/SKILL.md
 +    repository: https://github.com/maddhruv/absolute
      path: skills/shell-scripting
      license_path: LICENSE
-     ref: feat/skl-registry
-@@ -163,6 +149,48 @@
+     ref: 3fa1193422d9edd143ae336a484f1e58a4c1f8a3
+@@ -163,6 +150,48 @@
  temp files are always removed. `BASH_SOURCE[0]` resolves the script's real location
  even when called via symlink.
  
@@ -99,7 +153,7 @@ diff -ruN a/shell-scripting/SKILL.md b/shell-scripting/SKILL.md
  ### Argument parsing with getopts and long opts
  
  Use `getopts` for POSIX-portable short flags. For long options, use a `while/case`
-@@ -395,6 +423,8 @@
+@@ -395,6 +424,8 @@
  
  5. **Word splitting on array expansion without `[@]`** - `"${arr[*]}"` expands the array as a single word joined by `IFS`; `"${arr[@]}"` expands each element as a separate word. Using `*` instead of `@` when passing arrays to functions causes multi-word elements to silently merge.
  
@@ -108,7 +162,7 @@ diff -ruN a/shell-scripting/SKILL.md b/shell-scripting/SKILL.md
  ---
  
  ## Anti-patterns
-@@ -416,6 +446,37 @@
+@@ -416,6 +447,37 @@
  
  - `references/bash-cheatsheet.md` - Quick reference for bash built-ins, parameter
    expansion, test operators, and special variables
@@ -147,8 +201,8 @@ diff -ruN a/shell-scripting/SKILL.md b/shell-scripting/SKILL.md
  ---
  
 diff -ruN a/shell-scripting/references/bash-cheatsheet.md b/shell-scripting/references/bash-cheatsheet.md
---- a/shell-scripting/references/bash-cheatsheet.md	2026-06-22 06:54:29.090988023 +0300
-+++ b/shell-scripting/references/bash-cheatsheet.md	2026-06-22 06:53:26.763308393 +0300
+--- a/shell-scripting/references/bash-cheatsheet.md	2026-06-22 07:05:30.763157689 +0300
++++ b/shell-scripting/references/bash-cheatsheet.md	2026-06-22 06:55:35.311643731 +0300
 @@ -5,11 +5,27 @@
  # Bash Cheatsheet
  
@@ -725,7 +779,7 @@ diff -ruN a/shell-scripting/references/bash-cheatsheet.md b/shell-scripting/refe
  ```
 diff -ruN a/shell-scripting/references/zsh-cheatsheet.md b/shell-scripting/references/zsh-cheatsheet.md
 --- a/shell-scripting/references/zsh-cheatsheet.md	1970-01-01 03:00:00.000000000 +0300
-+++ b/shell-scripting/references/zsh-cheatsheet.md	2026-06-22 06:53:26.763470381 +0300
++++ b/shell-scripting/references/zsh-cheatsheet.md	2026-06-22 06:55:35.311807078 +0300
 @@ -0,0 +1,671 @@
 +<!-- Part of the shell-scripting AbsolutelySkilled skill. Load this file when
 +     writing zsh scripts and needing quick reference for built-ins, parameter

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brazen-bazaar.local/schemas/skill-marketplace.schema.json",
+  "title": "Skill Marketplace Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "githubUrl", "rawUrl", "content"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "compatibility": {
+            "type": "string"
+          },
+          "githubUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "rawUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "content": {
+            "type": "string",
+            "format": "uri"
+          },
+          "checksum": {
+            "type": "string",
+            "format": "uri"
+          },
+          "source": {
+            "$ref": "#/$defs/source"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "path", "ref"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "format": "uri"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "license_path": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # shell-scripting
 
-shell-scripting is a production-ready AI agent skill for claude-code, gemini-cli, openai-codex. Writing bash or zsh scripts, parsing arguments, handling errors, or automating CLI workflows.
+shell-scripting is a production-ready Agent Skills package for writing bash or zsh scripts, parsing arguments, handling errors, and automating CLI workflows.
 
 ## Quick Facts
 
@@ -8,7 +8,7 @@ shell-scripting is a production-ready AI agent skill for claude-code, gemini-cli
 |-------|-------|
 | Category | devtools |
 | Version | 0.1.0 |
-| Platforms | claude-code, gemini-cli, openai-codex |
+| Compatibility | Requires bash or zsh on a Unix-like shell environment |
 | License | MIT |
 
 ## How to Install
@@ -20,7 +20,7 @@ shell-scripting is a production-ready AI agent skill for claude-code, gemini-cli
 npx skills add AbsolutelySkilled/AbsolutelySkilled --skill shell-scripting
 ```
 
-3. The shell-scripting skill is now available in your AI coding agent (Claude Code, Gemini CLI, OpenAI Codex, etc.).
+3. The shell-scripting skill is now available in any Agent Skills-compatible client using that installer.
 
 ## Overview
 
@@ -36,11 +36,10 @@ idioms that separate fragile one-liners from scripts that hold up in production.
 
 `bash` `zsh` `shell` `scripting` `cli` `automation`
 
-## Platforms
+## Compatibility
 
-- claude-code
-- gemini-cli
-- openai-codex
+- Agent Skills-compatible clients
+- Bash or zsh on a Unix-like shell environment
 
 ## Related Skills
 
@@ -64,7 +63,7 @@ Run `npx skills add AbsolutelySkilled/AbsolutelySkilled --skill shell-scripting`
 
 ### What AI agents support shell-scripting?
 
-This skill works with claude-code, gemini-cli, openai-codex. Install it once and use it across any supported AI coding agent.
+This skill is portable across clients that implement the Agent Skills format.
 
 ## Maintainers
 

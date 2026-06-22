@@ -10,16 +10,16 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import matter from "gray-matter";
 import { Document, Scalar } from "yaml";
+import { loadMarketplaceConfig } from "./marketplace-config.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.join(__dirname, "..");
 const skillsDir = path.join(__dirname, "..", "skills");
 
-const GITHUB_BASE_URL =
-  "https://github.com/Kilo-Org/kilo-marketplace/tree/main/skills";
-const RAW_BASE_URL =
-  "https://raw.githubusercontent.com/Kilo-Org/kilo-marketplace/main/skills";
-const CONTENT_BASE_URL =
-  "https://github.com/Kilo-Org/kilo-marketplace/releases/download/skills-latest";
+const marketplaceConfig = loadMarketplaceConfig(rootDir);
+const GITHUB_BASE_URL = `${marketplaceConfig.githubBaseUrl}/skills`;
+const RAW_BASE_URL = `${marketplaceConfig.rawBaseUrl}/skills`;
+const CONTENT_BASE_URL = marketplaceConfig.skillsContentBaseUrl;
 
 // Create a folded block scalar with strip chomping (>-)
 function foldedScalar(value: string): Scalar {
@@ -41,9 +41,13 @@ const items = fs
       id: dir.name,
       description: foldedScalar(data.description),
       category: data.metadata?.category || undefined,
+      license: data.license || undefined,
+      compatibility: data.compatibility || undefined,
       githubUrl: `${GITHUB_BASE_URL}/${dir.name}`,
       rawUrl: `${RAW_BASE_URL}/${dir.name}/SKILL.md`,
       content: `${CONTENT_BASE_URL}/${dir.name}.tar.gz`,
+      checksum: `${CONTENT_BASE_URL}/${dir.name}.tar.gz.sha256`,
+      source: data.metadata?.source || undefined,
     };
   })
   .sort((a, b) => {
